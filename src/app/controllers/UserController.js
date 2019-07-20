@@ -9,7 +9,9 @@ class UserController {
       name: Yup.string()
         .min(3)
         .required(),
-      email: Yup.string().required(),
+      email: Yup.string()
+        .email()
+        .required(),
       password: Yup.string()
         .min(6)
         .required()
@@ -49,7 +51,7 @@ class UserController {
 
   async update(req, res) {
     const schema = Yup.object().shape({
-      name: Yup.string(),
+      name: Yup.string().min(3),
       email: Yup.string().email(),
       oldPassword: Yup.string().min(6),
       password: Yup.string()
@@ -86,7 +88,7 @@ class UserController {
       });
     }
 
-    const { id, name } = user.update(req.body);
+    const { id, name } = await user.update(req.body);
 
     return res.json({ id, name, email });
   }
