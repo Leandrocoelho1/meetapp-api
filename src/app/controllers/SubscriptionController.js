@@ -3,6 +3,8 @@ import { Op } from 'sequelize';
 import Subscription from '../models/Subscription';
 import Meetup from '../models/Meetup';
 import User from '../models/User';
+import Queue from '../../lib/Queue';
+import SubscriptionMail from '../jobs/SubscriptionMail';
 
 class SubscriptionController {
   async index(req, res) {
@@ -38,7 +40,9 @@ class SubscriptionController {
       return res.status(400).json({ error: 'Already subscribed' });
     }
 
-    const meetup = await Meetup.findByPk(req.params.id);
+    const meetup = await Meetup.findByPk(req.params.id, {
+      include: [User]
+    });
 
     if (meetup.user_id === req.userId) {
       return res
@@ -77,10 +81,10 @@ class SubscriptionController {
       meetup_id: meetup.id
     });
 
-    // await Queue.add(SubscriptionMail.key, {
-    //   meetup,
-    //   user,
-    // });
+    await Queue.add(SubscriptionMail.key, {
+      meetup,
+      user
+    });
 
     return res.json(subscription);
   }
