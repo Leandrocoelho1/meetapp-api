@@ -12,7 +12,7 @@ class Meetup extends Model {
         past: {
           type: Sequelize.VIRTUAL,
           get() {
-            return isBefore(new Date(), this.date);
+            return isBefore(this.date, new Date());
           }
         }
       },

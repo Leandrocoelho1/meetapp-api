@@ -8,16 +8,17 @@ import User from '../models/User';
 class MeetupController {
   async index(req, res) {
     const page = req.query.page || 1;
-    const date = parseISO(req.query.date) || new Date();
+    const { date } = req.query;
 
-    const meetups = Meetup.findAll({
+    const searchDate = date ? parseISO(date) : new Date();
+
+    const meetups = await Meetup.findAll({
       where: {
-        date: { [Op.between]: [startOfDay(date), endOfDay(date)] }
+        date: { [Op.between]: [startOfDay(searchDate), endOfDay(searchDate)] }
       },
       include: [
         {
           model: User,
-          as: 'user',
           attributes: ['name']
         }
       ],
@@ -31,6 +32,7 @@ class MeetupController {
   async store(req, res) {
     const schema = Yup.object().shape({
       title: Yup.string().required(),
+      file_id: Yup.number().required(),
       description: Yup.string().required(),
       location: Yup.string().required(),
       date: Yup.date().required()
@@ -41,7 +43,7 @@ class MeetupController {
       return res.status(400).json({ error: 'Validation Failed' });
     }
 
-    const { title, description, location, date } = req.body;
+    const { title, description, location, date, file_id } = req.body;
     const user_id = req.userId;
 
     const pastDate = isBefore(parseISO(date), new Date());
@@ -51,12 +53,13 @@ class MeetupController {
         .json({ error: "Can't create a meeting on a past date." });
     }
 
-    const meetup = Meetup.create({
+    const meetup = await Meetup.create({
       title,
       description,
       location,
       date,
-      user_id
+      user_id,
+      file_id
     });
 
     return res.json(meetup);
@@ -64,10 +67,11 @@ class MeetupController {
 
   async update(req, res) {
     const schema = Yup.object().shape({
-      title: Yup.string().required(),
-      description: Yup.string().required(),
-      location: Yup.string().required(),
-      date: Yup.date().required()
+      title: Yup.string(),
+      description: Yup.string(),
+      location: Yup.string(),
+      date: Yup.date(),
+      file_id: Yup.number()
     });
 
     const isValid = await schema.isValid(req.body);
@@ -88,14 +92,17 @@ class MeetupController {
     }
 
     const { date } = req.body;
-    const pastDate = isBefore(parseISO(date), new Date());
-    if (pastDate) {
-      return res
-        .status(400)
-        .json({ error: "Can't create a meeting on a past date." });
+
+    if (date) {
+      const pastDate = isBefore(parseISO(date), new Date());
+      if (pastDate) {
+        return res
+          .status(400)
+          .json({ error: "Can't schedule a meeting on a past date." });
+      }
     }
 
-    await meetup.update();
+    await meetup.update(req.body);
 
     return res.json(meetup);
   }
