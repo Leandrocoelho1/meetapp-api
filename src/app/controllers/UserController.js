@@ -73,7 +73,7 @@ class UserController {
 
     const { email, oldPassword } = req.body;
 
-    if (email && email === user.email) {
+    if (email && email !== user.email) {
       const emailInUse = await User.findOne({
         where: { email: req.body.email }
       });
