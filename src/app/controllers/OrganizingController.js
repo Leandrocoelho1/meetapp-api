@@ -1,4 +1,5 @@
 import Meetup from '../models/Meetup';
+import File from '../models/File';
 
 class OrganizingController {
   async index(req, res) {
@@ -7,6 +8,16 @@ class OrganizingController {
     });
 
     return res.json(meetups);
+  }
+
+  async show(req, res) {
+    const meetup = await Meetup.findByPk(req.params.id, {
+      include: [
+        { model: File, attributes: ['id', 'name', 'path', 'url'], as: 'banner' }
+      ]
+    });
+
+    return res.json(meetup);
   }
 }
 
