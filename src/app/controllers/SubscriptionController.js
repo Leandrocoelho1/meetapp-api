@@ -1,6 +1,7 @@
 import { Op } from 'sequelize';
 
 import Subscription from '../models/Subscription';
+import File from '../models/File';
 import Meetup from '../models/Meetup';
 import User from '../models/User';
 import Queue from '../../lib/Queue';
@@ -15,15 +16,19 @@ class SubscriptionController {
       include: [
         {
           model: Meetup,
+          as: 'meetup',
           where: {
             date: {
               [Op.gt]: new Date()
             }
           },
-          required: true
+          include: [
+            { model: File, as: 'banner' },
+            { model: User, as: 'user', attributes: ['name'] }
+          ]
         }
       ],
-      order: [[Meetup, 'date']]
+      order: [['meetup', 'date']]
     });
 
     return res.json(subscriptions);
@@ -41,7 +46,7 @@ class SubscriptionController {
     }
 
     const meetup = await Meetup.findByPk(req.params.id, {
-      include: [User]
+      include: [{ model: User, as: 'user' }]
     });
 
     if (meetup.user_id === req.userId) {
@@ -61,6 +66,7 @@ class SubscriptionController {
       include: [
         {
           model: Meetup,
+          as: 'meetup',
           required: true,
           where: {
             date: meetup.date
@@ -87,6 +93,20 @@ class SubscriptionController {
     });
 
     return res.json(subscription);
+  }
+
+  async delete(req, res) {
+    const subscription = await Subscription.findByPk(req.params.id);
+
+    if (subscription.user_id !== req.userId) {
+      return res.status(403).json({
+        error: 'Cannot cancel another user subscription'
+      });
+    }
+
+    await Subscription.destroy({ where: { id: req.params.id } });
+
+    return res.json({ message: 'successfully canceled' });
   }
 }
 
