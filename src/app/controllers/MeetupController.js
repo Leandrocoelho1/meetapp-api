@@ -4,6 +4,7 @@ import { Op } from 'sequelize';
 
 import Meetup from '../models/Meetup';
 import User from '../models/User';
+import File from '../models/File';
 
 class MeetupController {
   async index(req, res) {
@@ -19,8 +20,10 @@ class MeetupController {
       include: [
         {
           model: User,
-          attributes: ['name']
-        }
+          attributes: ['name'],
+          as: 'user'
+        },
+        { model: File, attributes: ['id', 'name', 'path', 'url'], as: 'banner' }
       ],
       limit: 10,
       offset: (page - 1) * 10
