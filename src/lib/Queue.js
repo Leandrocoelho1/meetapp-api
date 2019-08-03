@@ -15,7 +15,7 @@ class Queue {
       this.queues[key] = {
         bee: new Bee(key, {
           redis: {
-            host: '192.168.99.100',
+            host: process.env.REDIS_HOST,
             port: process.env.REDIS_PORT
           }
         }),
